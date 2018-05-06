@@ -1,6 +1,6 @@
 {
   "name": "sftp-client-promise",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "a SFTP client for node.js",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,10 @@
   ],
   "dependencies": {
     "ssh2": "^0.6.0"
+   },
+   "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/mityburner/sftp-client-promise.git"
    },
   "license": "ISC"
 }

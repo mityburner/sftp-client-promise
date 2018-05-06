@@ -94,6 +94,17 @@ conn.sftp('createWriteStream', {
   //data: 'some local data'
 })
 ```
+#### fastGet
+download file from remote server
+```
+conn.sftp('fastGet', {remotePath: remotePath, localPath: localPath})
+```
+#### fastPut
+upload local file to remote serer
+```
+conn.sftp('fastPut', {localPath: localPath, remotePath: remotePath})
+```
+
 #### readFile
 download remote server file
 ```

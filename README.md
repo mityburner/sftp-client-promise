@@ -122,14 +122,14 @@ conn.sftp('appendFile', {path: remoteFilePath, data: localData, option: option})
 ```
 #### mkdir
 
-create a new directory.
+create new directory recursively.
 ```
 conn.sftp('mkdir', {path: remoteFilePath});
 ```
 
 #### rmdir
 
-remove the directory.
+remove the directory recursively.
 ```
 conn.sftp('rmdir', {path: localPath});
 ```

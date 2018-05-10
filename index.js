@@ -91,13 +91,98 @@ class SftpClient{
                        });
                        break;
                   case 'mkdir':
-                       sftp.mkdir(params.path, params.attrs, (err) => {
-                           if(err) reject(err);
-                           resolve();
-                       });
+                        sftp.mkdir(params.path, params.attrs, (err) => {
+                            if(err){
+                                switch(err.code){
+                                    // no such file
+                                    case 2:
+                                        let tokens = params.path.split(/\//).filter((path) => path.trim());
+                                        let path = '/';
+                                        let mkdir = () => {
+                                            if(!tokens.length){
+                                                return resolve();
+                                            }
+                                            path += tokens.shift() + '/';
+                                            sftp.exists(path, (isExists) => {
+                                                if(isExists){
+                                                    mkdir();
+                                                }else{
+                                                    sftp.mkdir(path, (err) => {
+                                                        if(err){
+                                                            if(err.code === 4){
+                                                                reject(new Error("cannot create directory: File exists"));
+                                                            }else{
+                                                               reject(err);
+                                                            }
+                                                        }else{
+                                                            mkdir();
+                                                        }
+                                                    })
+                                                }
+                                            });
+                                        }
+                                        mkdir();
+                                        break;
+                                    case 4:
+                                        reject(new Error("cannot create directory: File exists"));
+                                        break;
+                                    default: reject(err);
+                                        break;
+                                }
+                            }else{
+                                resolve();
+                            }
+                        });
                        break;
                   case 'rmdir':
-                       sftp.rmdir(params.path, resolve);
+                            sftp.rmdir(params.path, (err) => {
+                                if(err){
+                                    switch(err.code){
+                                        case 2:
+                                            reject(new Error("No such file or directory"));
+                                            break;
+                                        case 4:
+                                            let path = [params.path];
+                                            let rmdir = () => {
+                                                let _path = path.pop();
+                                                if(!_path) return resolve();
+                                                sftp.readdir(_path, (err, list) => {
+                                                    if(err) return reject(err);
+                                                    if(!list.length) {
+                                                        return sftp.rmdir(_path, (err) => err ? reject(err) : rmdir());
+                                                    }
+                                                    // staging dir not deleted before the subdirectory or file is processed
+                                                    path.push(_path);
+                                                    let files = [];
+                
+                                                    list.map((item) => ({
+                                                        path: _path.endsWith('/') ? _path + item.filename 
+                                                                                    : _path + "/" + item.filename,
+                                                        type: item.longname.substr(0,1)
+                                                    })).map((item) => {
+                                                        if(item.type === 'd'){
+                                                            path.push(item.path);
+                                                        }else{
+                                                            files.push(item.path);
+                                                        }
+                                                    });
+                                                    if(!files.length) return rmdir();
+                                                    let promise = files.map((file) => this.sftp('unlink', {path: file}));
+                                                    Promise.all(promise).then(rmdir).catch(reject);
+                                                });
+                                            };
+                                            rmdir();
+                                            break;
+                                        default:
+                                            reject(err);
+                                            break;
+                                    }
+                                    
+                                }else{
+                                    resolve();
+                                }
+                            });
+                            
                        break;
                   case 'rename':
                        sftp.rename(params.oldPath, params.newPath, (err) => {
